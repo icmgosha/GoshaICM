@@ -88,8 +88,8 @@
             <button class="back-btn" onclick="closeVideo()">← Назад</button>
         </div>
         <div class="video-container">
-            <video id="mainVideo" controls playsinline preload="metadata">
-                <source src="" type="video/mp4">
+            <video id="mainVideo" controls playsinline preload="auto">
+                <source src="" type="video/mp4" id="videoSource">
                 Ваш браузер не поддерживает видео.
             </video>
         </div>
@@ -119,35 +119,45 @@
         const videoScreen = document.getElementById('videoScreen');
         const mainVideo = document.getElementById('mainVideo');
         const videoTitle = document.getElementById('videoTitle');
-        const videoSource = mainVideo.querySelector('source');
 
         function playVideo(key) {
             const video = videos[key];
-            if (!video) return;
+            if (!video) {
+                console.log('Видео не найдено:', key);
+                return;
+            }
 
-            mainVideo.pause();
-            mainVideo.src = '';
-            mainVideo.load();
+            console.log('Загружаем видео:', video.src);
+
+            // Создаем НОВЫЙ элемент video вместо старого
+            const newVideo = mainVideo.cloneNode(true);
+            newVideo.id = 'mainVideo';
+            mainVideo.parentNode.replaceChild(newVideo, mainVideo);
             
-            setTimeout(() => {
-                videoSource.src = video.src;
-                videoTitle.textContent = video.title;
-                
-                mainVideo.load();
-                
-                menuScreen.style.display = 'none';
-                videoScreen.style.display = 'flex';
-                
-                mainVideo.play().catch(e => {
-                    console.log('Ошибка:', e);
-                });
-            }, 100);
+            // Устанавливаем источник
+            const source = newVideo.querySelector('source');
+            source.src = video.src + '?t=' + new Date().getTime(); // Добавляем timestamp для сброса кэша
+            newVideo.load();
+            
+            videoTitle.textContent = video.title;
+            
+            // Показываем экран видео
+            menuScreen.style.display = 'none';
+            videoScreen.style.display = 'flex';
+            
+            // Запускаем видео
+            newVideo.play().catch(e => {
+                console.log('Ошибка воспроизведения:', e);
+                alert('Не удалось воспроизвести видео: ' + video.src);
+            });
         }
 
         function closeVideo() {
-            mainVideo.pause();
-            mainVideo.src = '';
-            mainVideo.load();
+            const video = document.getElementById('mainVideo');
+            if (video) {
+                video.pause();
+                video.src = '';
+            }
             
             videoScreen.style.display = 'none';
             menuScreen.style.display = 'flex';
@@ -157,10 +167,6 @@
             if (e.key === 'Escape' && videoScreen.style.display === 'flex') {
                 closeVideo();
             }
-        });
-
-        mainVideo.addEventListener('error', (e) => {
-            console.log('Ошибка загрузки видео');
         });
     </script>
 </body>
