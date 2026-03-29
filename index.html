@@ -93,7 +93,7 @@
             <button class="back-btn" onclick="closeVideo()">← Назад</button>
         </div>
         <div class="video-container">
-            <video id="mainVideo" controls autoplay playsinline>
+            <video id="mainVideo" controls playsinline preload="metadata">
                 <source src="" type="video/mp4">
                 Ваш браузер не поддерживает видео.
             </video>
@@ -104,7 +104,7 @@
         // Настройки видео
         const videos = {
             greeting: { 
-                src: 'videos/gosha.mp4',      // ← Ваше приветственное видео
+                src: 'videos/gosha.mp4',
                 title: '👋 Приветствие' 
             },
             applicant: { 
@@ -125,32 +125,56 @@
         const videoScreen = document.getElementById('videoScreen');
         const mainVideo = document.getElementById('mainVideo');
         const videoTitle = document.getElementById('videoTitle');
+        const videoSource = mainVideo.querySelector('source');
 
         function playVideo(key) {
             const video = videos[key];
             if (!video) return;
 
-            mainVideo.querySelector('source').src = video.src;
-            videoTitle.textContent = video.title;
+            // 🔧 ИСПРАВЛЕНИЕ: Полностью сбрасываем и перезагружаем видео
+            mainVideo.pause();
+            mainVideo.src = '';           // Очищаем источник
+            mainVideo.load();             // Принудительно загружаем
             
-            menuScreen.style.display = 'none';
-            videoScreen.style.display = 'flex';
-            
-            mainVideo.load();
-            mainVideo.play().catch(e => console.log('Автозапуск:', e));
+            // Небольшая задержка для надёжности
+            setTimeout(() => {
+                videoSource.src = video.src;
+                videoTitle.textContent = video.title;
+                
+                mainVideo.load();         // Загружаем новое видео
+                
+                // Показываем экран и запускаем
+                menuScreen.style.display = 'none';
+                videoScreen.style.display = 'flex';
+                
+                mainVideo.play().catch(e => {
+                    console.log('Ошибка воспроизведения:', e);
+                    // Если автозапуск не сработал — пользователь нажмёт Play сам
+                });
+            }, 100);
         }
 
         function closeVideo() {
+            // 🔧 ИСПРАВЛЕНИЕ: Полная очистка видео
             mainVideo.pause();
             mainVideo.src = '';
+            mainVideo.load();
+            
             videoScreen.style.display = 'none';
             menuScreen.style.display = 'flex';
         }
 
+        // Закрытие по клавише Esc
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && videoScreen.style.display === 'flex') {
                 closeVideo();
             }
+        });
+
+        // Обработка ошибок загрузки видео
+        mainVideo.addEventListener('error', (e) => {
+            console.log('Ошибка загрузки видео:', e);
+            alert('Видео не загрузилось. Проверьте, что файл загружен в папку videos/');
         });
     </script>
 </body>
