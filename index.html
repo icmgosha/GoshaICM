@@ -31,6 +31,7 @@
             background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3);
             border-radius: 16px; color: white; font-size: 1.1rem; font-weight: 500;
             cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px);
+            pointer-events: auto; /* Гарантируем, что кнопки активны */
         }
         .btn:hover {
             background: rgba(255,255,255,0.3); transform: translateY(-3px);
@@ -41,6 +42,10 @@
         #videoScreen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: black; display: none; flex-direction: column; z-index: 200;
+            pointer-events: none; /* Отключаем клики по экрану видео */
+        }
+        #videoScreen.active {
+            pointer-events: auto; /* Включаем только когда активно */
         }
         .video-header {
             padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
@@ -50,6 +55,7 @@
         .back-btn {
             padding: 10px 20px; background: #e94560; border: none; border-radius: 10px;
             color: white; font-weight: 600; cursor: pointer; transition: background 0.3s;
+            pointer-events: auto;
         }
         .back-btn:hover { background: #ff6b6b; }
         .video-container {
@@ -60,6 +66,7 @@
             width: 100%; max-width: 1200px; max-height: 85vh;
             border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
             object-fit: contain; background: black;
+            pointer-events: auto;
         }
 
         @media (max-width: 600px) {
@@ -89,7 +96,7 @@
         </div>
         <div class="video-container">
             <video id="mainVideo" controls playsinline preload="auto">
-                <source src="" type="video/mp4" id="videoSource">
+                <source src="" type="video/mp4">
                 Ваш браузер не поддерживает видео.
             </video>
         </div>
@@ -129,44 +136,59 @@
 
             console.log('Загружаем видео:', video.src);
 
-            // Создаем НОВЫЙ элемент video вместо старого
-            const newVideo = mainVideo.cloneNode(true);
-            newVideo.id = 'mainVideo';
-            mainVideo.parentNode.replaceChild(newVideo, mainVideo);
+            // Сбрасываем текущее видео
+            mainVideo.pause();
+            mainVideo.currentTime = 0;
+            mainVideo.src = '';
             
-            // Устанавливаем источник
-            const source = newVideo.querySelector('source');
-            source.src = video.src + '?t=' + new Date().getTime(); // Добавляем timestamp для сброса кэша
-            newVideo.load();
+            // Устанавливаем новый источник с timestamp для сброса кэша
+            const timestamp = new Date().getTime();
+            mainVideo.querySelector('source').src = video.src + '?t=' + timestamp;
+            mainVideo.load();
             
             videoTitle.textContent = video.title;
             
             // Показываем экран видео
             menuScreen.style.display = 'none';
             videoScreen.style.display = 'flex';
+            videoScreen.classList.add('active');
             
             // Запускаем видео
-            newVideo.play().catch(e => {
+            mainVideo.play().catch(e => {
                 console.log('Ошибка воспроизведения:', e);
-                alert('Не удалось воспроизвести видео: ' + video.src);
             });
         }
 
         function closeVideo() {
-            const video = document.getElementById('mainVideo');
-            if (video) {
-                video.pause();
-                video.src = '';
-            }
+            console.log('Закрываем видео');
             
+            // Останавливаем видео
+            mainVideo.pause();
+            mainVideo.currentTime = 0;
+            mainVideo.src = '';
+            
+            // Скрываем экран видео
+            videoScreen.classList.remove('active');
             videoScreen.style.display = 'none';
+            
+            // Показываем меню
             menuScreen.style.display = 'flex';
+            
+            console.log('Меню показано, кнопки должны работать');
         }
 
+        // Обработчик клавиши Esc
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && videoScreen.style.display === 'flex') {
                 closeVideo();
             }
+        });
+
+        // Дополнительная проверка: кнопки всегда должны быть кликабельны
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                console.log('Кнопка нажата:', this.textContent);
+            });
         });
     </script>
 </body>
